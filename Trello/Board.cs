@@ -3,16 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.IO;
+using NLog;
 
 namespace Trello
 {
+
     public class Board
     {
         public delegate void StatusWasChanged();
         public event StatusWasChanged Status;   
         public List<Task> tasksList;
         public List<User> usersList;
-        
+        private static readonly NLog.Logger Logger = LogManager.GetCurrentClassLogger();
+
+
+
+        public async void configureLog()
+        {
+            var config = new NLog.Config.LoggingConfiguration();
+            var logfile = new NLog.Targets.FileTarget("logfile") { FileName = "trello.txt" };
+            var logconsole = new NLog.Targets.ConsoleTarget("logconsole");           
+            config.AddRule(LogLevel.Info, LogLevel.Fatal, logconsole);
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);         
+            NLog.LogManager.Configuration = config;
+        }
 
 
         public async System.Threading.Tasks.Task CreateTaskAsync()
@@ -30,8 +44,8 @@ namespace Trello
             {
                 using FileStream fs = new FileStream("tasks.json", FileMode.OpenOrCreate);
                 await JsonSerializer.SerializeAsync(fs, task);
-                Console.WriteLine("Task has been saved to file");
                 fs.Close();
+                Logger.Info("Task was created");
 
             }
             catch(NullReferenceException)
@@ -55,6 +69,7 @@ namespace Trello
                 {
                   usersList.Add(new User(userName));
                     var user = new User(userName);
+                    Logger.Info("User was created");
 
                 } catch(NullReferenceException)
                 {
@@ -77,6 +92,7 @@ namespace Trello
             }
 
             tasksList.ForEach(t => Console.WriteLine($"{tasksList.IndexOf(t)} |   {t.Title}   | {t.TaskStatus} | {t.Description} "));
+            Logger.Info("Show all task method was called");
 
         }
         public void ShowAllUsers()
